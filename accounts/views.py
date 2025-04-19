@@ -9,14 +9,11 @@ def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('login')  # Update as needed
+            user = form.save(commit=False)
+            user.role = 'Staff'  # Set default role
+            form.save()  # ✅ Call this to save the password hash properly
+            return redirect('login')
     else:
         form = CustomUserCreationForm()
     return render(request, 'accounts/register.html', {'form': form})
-
-
-
-
-
 

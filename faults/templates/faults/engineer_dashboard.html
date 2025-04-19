@@ -1,0 +1,75 @@
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'faults/css/dashboard.css' %}">
+<!-- 🔔 Sound -->
+<audio id="alertSound" src="{% static 'faults/audio/alert.mp3' %}" preload="auto"></audio>
+
+<!-- 📜 JavaScript -->
+<script src="{% static 'faults/js/engineer_dashboard.js' %}"></script>
+
+
+<h2>🛠️ Engineer Dashboard – Your Assigned Calls</h2>
+
+<table border="1" cellpadding="8" id="calls-table">
+  <thead>
+    <tr>
+      <th>Caller</th>
+      <th>Location</th>
+      <th>Status</th>
+      <th>Time</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="calls-body">
+    <!-- Populated by AJAX -->
+  </tbody>
+</table>
+
+<script>
+function loadCalls() {
+  fetch("{% url 'engineer_calls_json' %}")
+    .then(response => response.json())
+    .then(data => {
+      const tbody = document.getElementById('calls-body');
+      tbody.innerHTML = '';
+
+      data.calls.forEach(call => {
+        const row = document.createElement('tr');
+
+        let actionsHtml = '';
+        if (call.status === 'Waiting') {
+          actionsHtml = `
+            <form method="POST" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="call_id" value="${call.id}">
+              <input type="hidden" name="action" value="accept">
+              <button type="submit">✅ Accept</button>
+            </form>
+
+            <form method="POST" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="call_id" value="${call.id}">
+              <input type="hidden" name="action" value="reject">
+              <input type="text" name="reason" placeholder="Reason (optional)">
+              <button type="submit">❌ Reject</button>
+            </form>
+          `;
+        } else {
+          actionsHtml = call.status;
+        }
+
+        row.innerHTML = `
+          <td>${call.caller}</td>
+          <td>${call.location}</td>
+          <td>${call.status}</td>
+          <td>${call.created_at}</td>
+          <td>${actionsHtml}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    });
+}
+
+setInterval(loadCalls, 10000); // every 10 seconds
+window.onload = loadCalls;
+</script>

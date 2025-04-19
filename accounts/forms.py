@@ -19,7 +19,10 @@ class CustomUserCreationForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.role = 'Staff'  # default role
+        user.role = 'Staff'  # ✅ Set the default role here
         if commit:
             user.save()
         return user
+
+
+   

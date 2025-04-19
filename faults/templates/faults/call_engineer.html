@@ -1,0 +1,7 @@
+<h2>Need an Engineer?</h2>
+<form method="POST" action="{% url 'call_engineer' %}">
+  {% csrf_token %}
+  <p>You’re calling from {{ location }} – continue?</p>
+  <button type="submit">✅ Call Now</button>
+  <a href="/">❌ Cancel</a>
+</form>

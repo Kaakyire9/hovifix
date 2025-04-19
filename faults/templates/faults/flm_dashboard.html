@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLM Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h2>Unassigned Fault Calls</h2>
+
+    <table id="calls-table">
+        <thead>
+            <tr>
+                <th>Caller</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Assigned Engineer</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Calls will be dynamically inserted here -->
+        </tbody>
+    </table>
+
+    <!-- CSRF token setup for AJAX -->
+    <script>
+        function getCSRFToken() {
+            return document.cookie.match(/csrftoken=([^;]+)/)[1];
+        }
+    </script>
+
+    <script>
+        function fetchCalls() {
+            $.ajax({
+                url: '{% url "poll_calls" %}',
+                method: 'GET',
+                success: function(response) {
+                    const calls = response.calls;
+                    const engineers = response.engineers;  // Make sure this is included in JSON response
+                    let tableBody = '';
+
+                    calls.forEach(call => {
+                        let engineerOptions = '';
+                        engineers.forEach(engineer => {
+                            engineerOptions += `<option value="${engineer.id}">${engineer.name}</option>`;
+                        });
+
+                        tableBody += `
+                            <tr>
+                                <td>${call.caller}</td>
+                                <td>${call.location}</td>
+                                <td>${call.status}</td>
+                                <td>${call.assigned_engineer || 'None'}</td>
+                                <td>
+                                    <form class="assign-form">
+                                        <input type="hidden" name="call_id" value="${call.id}">
+                                        <select name="engineer_id" required>
+                                            ${engineerOptions}
+                                        </select>
+                                        <button type="submit">Assign</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    $('#calls-table tbody').html(tableBody);
+                },
+                error: function() {
+                    console.error('Error fetching calls.');
+                }
+            });
+        }
+
+        // Handle assign form submission via AJAX
+        $(document).on('submit', '.assign-form', function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const call_id = form.find('input[name="call_id"]').val();
+            const engineer_id = form.find('select[name="engineer_id"]').val();
+
+            $.ajax({
+                url: '{% url "flm_dashboard" %}',  // Adjust this if needed
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                data: {
+                    call_id: call_id,
+                    engineer_id: engineer_id
+                },
+                success: function(response) {
+                    fetchCalls();  // Refresh the table
+                },
+                error: function() {
+                    alert('Assignment failed.');
+                }
+            });
+        });
+
+        setInterval(fetchCalls, 5000);
+        fetchCalls();
+    </script>
+</body>
+</html>
